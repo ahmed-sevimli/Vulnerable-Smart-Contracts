@@ -25,9 +25,9 @@ contract BasicBank4  {
 
     function withdraw(uint _amount) external {
         require(getBalance(msg.sender) >= _amount);
-        (bool success, ) = msg.sender.call{value: (_amount*99)/100}("");
-        require(success);
         userFunds[msg.sender] -= _amount;
+        (bool success, ) = msg.sender.call{value: ((_amount/100)*99)}("");
+        require(success);
         collectedCommission += _amount/100; //%1 komisyon olarak commission_taker hesabına ekleniyor.
     }   
 
