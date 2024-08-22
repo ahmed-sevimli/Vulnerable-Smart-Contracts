@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.7.0;
 
 //transfer between users
@@ -6,7 +7,7 @@ contract BasicBank4  {
 
     mapping (address => uint) private userFunds;
     address private commissionCollector;
-    uint private collectedComission = 0;
+    uint private collectedCommission = 0;
 
     constructor() {
         commissionCollector = msg.sender;
@@ -18,15 +19,16 @@ contract BasicBank4  {
     }
 
     function deposit() public payable {
-        require(msg.value >= 1); //gönderilen eth miktarı 1 den fazla olmalı
+        require(msg.value >= 1 ether); //gönderilen eth miktarı 1 den fazla olmalı
         userFunds[msg.sender] += msg.value; //işlemi yapan kullanıcının adres değeri msg.value kadar artırıldı.
     }
 
-    function withdraw(uint _amount) external payable {
+    function withdraw(uint _amount) external {
         require(getBalance(msg.sender) >= _amount);
-        msg.sender.call{value: _amount}("");
+        (bool success, ) = msg.sender.call{value: (_amount*99)/100}("");
+        require(success);
         userFunds[msg.sender] -= _amount;
-        userFunds[commissionCollector] += _amount/100; //%1 komisyon olarak commission_taker hesabına ekleniyor.
+        collectedCommission += _amount/100; //%1 komisyon olarak commission_taker hesabına ekleniyor.
     }   
 
     function getBalance(address _user) public view returns(uint) {
@@ -38,16 +40,18 @@ contract BasicBank4  {
     }
 
     function transfer(address _userToSend, uint _amount) external{
+        require(getBalance(msg.sender) >= _amount);
         userFunds[_userToSend] += _amount;
         userFunds[msg.sender] -= _amount;
     }
 
     function setCommissionCollector(address _newCommissionCollector) external onlyCommissionCollector{
+        collectCommission();
         commissionCollector = _newCommissionCollector;
     }
 
-    function collectCommission() external {
-        userFunds[msg.sender] += collectedComission;
-        collectedComission = 0;
+    function collectCommission() public onlyCommissionCollector{
+        userFunds[commissionCollector] += collectedCommission;
+        collectedCommission = 0;
     }
 }
